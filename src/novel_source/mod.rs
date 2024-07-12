@@ -14,6 +14,7 @@ trait NovelSource {
     async fn download_image(image_url: &str) -> Result<Vec<u8>, NovelSourceError>;
 }
 
+#[derive(Clone)]
 struct NovelProfile {
     pub id: String,
     pub title: String,
