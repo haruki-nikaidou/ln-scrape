@@ -22,7 +22,6 @@ struct NovelProfile {
     pub tags: Option<Vec<String>>,
     pub publisher: Option<String>,
     pub description: String,
-    pub url: Option<String>,
 }
 
 struct NovelCatalog {
