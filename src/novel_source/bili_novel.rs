@@ -3,6 +3,7 @@ use fake_user_agent::get_chrome_rua;
 use regex::Regex;
 use retry::delay::Fibonacci;
 use retry::{OperationResult, retry};
+use scraper::{Html, Node};
 use tracing::{error, warn};
 use crate::novel_source::{DownloadedChapter, NovelCatalog, NovelProfile, NovelSource, NovelSourceError, NovelVolumeInfo};
 use crate::novel_source::NovelSourceError::{InvalidUrl, ParseError};
@@ -73,6 +74,30 @@ fn try_get_description(home_page_fragment: &scraper::Html) -> Option<String> {
         .next()
         .map(|e| e.text().collect())
 }
+
+async fn get_catalog_page(novel_id: String) -> Result<String, reqwest::Error> {
+    let url = format!("{}/novel/{}/catalog", DOMAIN, novel_id);
+    let client = reqwest::Client::new();
+    let res = client.get(&url)
+        .header("cookie", COOKIE)
+        .header("user-agent", get_chrome_rua())
+        .send()
+        .await?
+        .text()
+        .await?;
+    Ok(res)
+}
+
+fn get_volumes_nodes<'a>(html: Html) -> Vec<&'a Node> {
+    let parent = html.select(&scraper::Selector::parse("#volumes").unwrap());
+    let children: Vec<_> = parent
+        .flat_map(|e| e.children())
+        .map(|e| e.value())
+        .collect();
+    children
+}
+
+
 
 #[async_trait::async_trait]
 impl NovelSource for BiliNovel {
