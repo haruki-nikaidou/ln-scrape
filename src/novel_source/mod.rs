@@ -5,13 +5,13 @@ use std::sync::{Arc};
 #[async_trait::async_trait]
 trait NovelSource {
     fn url_belongs_to_source(url: &str) -> bool;
-    async fn get_novel_profile(home_url: &str) -> Result<NovelProfile, Box<dyn std::error::Error>>;
+    async fn get_novel_profile(home_url: &str) -> Result<NovelProfile, NovelSourceError>;
 
-    async fn get_novel_catalog(profile: NovelProfile) -> Result<NovelCatalog, Box<dyn std::error::Error>>;
+    async fn get_novel_catalog(profile: NovelProfile) -> Result<NovelCatalog, NovelSourceError>;
 
-    async fn download_chapter_content(volume: &NovelVolumeInfo) -> Result<Vec<DownloadedChapter>, Box<dyn std::error::Error>>;
+    async fn download_chapter_content(volume: &NovelVolumeInfo) -> Result<Vec<DownloadedChapter>, NovelSourceError>;
 
-    async fn download_image(image_url: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>>;
+    async fn download_image(image_url: &str) -> Result<Vec<u8>, NovelSourceError>;
 }
 
 struct NovelProfile {
@@ -63,4 +63,10 @@ impl DownloadedVolume {
             profile,
         }
     }
+}
+
+enum NovelSourceError {
+    InvalidUrl(String),
+    NetworkError(reqwest::Error),
+    ParseError(String),
 }

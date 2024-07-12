@@ -3,8 +3,9 @@ use fake_user_agent::get_chrome_rua;
 use regex::Regex;
 use retry::delay::Fibonacci;
 use retry::{OperationResult, retry};
-use tracing::error;
-use crate::novel_source::{DownloadedChapter, NovelCatalog, NovelProfile, NovelSource, NovelVolumeInfo};
+use tracing::{error, warn};
+use crate::novel_source::{DownloadedChapter, NovelCatalog, NovelProfile, NovelSource, NovelSourceError, NovelVolumeInfo};
+use crate::novel_source::NovelSourceError::{InvalidUrl, ParseError};
 
 const URL_REGEX_STR: &str = r#"(?:linovelib|bilinovel)\\.com/novel/(\\d+)"#;
 const DOMAIN: &str = "https://linovelib.com";
@@ -23,7 +24,7 @@ fn try_get_novel_id(url: &str) -> Option<String> {
         .map(|m| m.as_str().to_string())
 }
 
-async fn get_home_page(novel_id: String) -> Result<String, Box<dyn Error>> {
+async fn get_home_page(novel_id: String) -> Result<String, reqwest::Error> {
     let url = format!("{}/novel/{}", DOMAIN, novel_id);
     let client = reqwest::Client::new();
     let res = client.get(&url)
@@ -79,18 +80,38 @@ impl NovelSource for BiliNovel {
         URL_REGEX.is_match(url)
     }
 
-    async fn get_novel_profile(home_url: &str) -> Result<NovelProfile, Box<dyn Error>> {
-        let novel_id = try_get_novel_id(home_url)
-            .ok_or("Invalid URL")?;
-        let home_page = get_home_page(novel_id.clone()).await?;
+    async fn get_novel_profile(home_url: &str) -> Result<NovelProfile, NovelSourceError> {
+        let novel_id = match try_get_novel_id(home_url) {
+            Some(id) => id,
+            None => {
+                warn!("Failed to get novel id from url: {}", home_url);
+                return Err(InvalidUrl(home_url.to_string()));
+            }
+        };
+
+        let home_page = match get_home_page(novel_id.clone()).await {
+            Ok(page) => page,
+            Err(e) => {
+                error!("Failed to get home page for novel {}: {}", novel_id, e);
+                return Err(NovelSourceError::NetworkError(e));
+            }
+        };
         let fragment = scraper::Html::parse_document(&home_page);
-        let title = try_get_title(&fragment)
-            .ok_or("Failed to get title")?;
+        let title = match try_get_title(&fragment) {
+            Some(t) => t,
+            None => {
+                return Err(ParseError("Failed to get title".to_owned()));
+            }
+        };
         let cover_url = try_get_cover_url(&fragment);
         let tags = try_get_tags(&fragment);
         let publisher = try_get_publisher(&fragment);
-        let author = try_get_author(&fragment)
-            .ok_or("Failed to get author")?;
+        let author = match try_get_author(&fragment) {
+            Some(a) => a,
+            None => {
+                return Err(ParseError("Failed to get author".to_owned()));
+            }
+        };
         let description = try_get_description(&fragment);
         Ok(NovelProfile {
             id: novel_id,
@@ -103,15 +124,15 @@ impl NovelSource for BiliNovel {
         })
     }
 
-    async fn get_novel_catalog(profile: NovelProfile) -> Result<NovelCatalog, Box<dyn Error>> {
+    async fn get_novel_catalog(profile: NovelProfile) -> Result<NovelCatalog, NovelSourceError> {
         todo!()
     }
 
-    async fn download_chapter_content(volume: &NovelVolumeInfo) -> Result<Vec<DownloadedChapter>, Box<dyn Error>> {
+    async fn download_chapter_content(volume: &NovelVolumeInfo) -> Result<Vec<DownloadedChapter>, NovelSourceError> {
         todo!()
     }
 
-    async fn download_image(image_url: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+    async fn download_image(image_url: &str) -> Result<Vec<u8>, NovelSourceError> {
         todo!()
     }
 }
