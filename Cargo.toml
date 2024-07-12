@@ -1,0 +1,16 @@
+[package]
+name = "fuckbilinovel-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait = "0.1.81"
+clap = "4.5.9"
+fake_user_agent = "0.2.1"
+lazy_static = "1.5.0"
+regex = "1.10.5"
+reqwest = "0.12.5"
+scraper = "0.19.0"
+serde_json = "1.0.120"
+tracing = "0.1.40"
+tracing-subscriber = "0.3.18"
