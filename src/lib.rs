@@ -1,7 +1,4 @@
-mod novel_source;
-mod packer;
-mod codebook;
+pub mod request_sender;
+pub mod scrape;
+pub mod ln_source;
 
-pub fn main() {
-    println!("Hello, world!");
-}
