@@ -7,8 +7,11 @@ use crate::scrape::{Catalog, NovelInfo, Volume};
 
 pub(super) fn detect_cloudflare_block(html: &Html) -> bool {
     let selector = Selector::parse("title").unwrap();
-    let title = html.select(&selector).next().unwrap().text().collect::<String>();
-    title.contains("Cloudflare")
+    let title = html.select(&selector).next();
+    match title {
+        Some(title) => title.text().any(|x| x.contains("Cloudflare")),
+        None => false
+    }
 }
 
 pub(super) fn parse_info_page(html: Html, id: i32, url: Url) -> Result<NovelInfo> {

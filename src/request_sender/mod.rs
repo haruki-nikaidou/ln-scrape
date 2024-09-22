@@ -65,7 +65,11 @@ impl RequestSenderTrait for RequestSender {
     async fn req(&self, url: &Url) -> Result<Response, Error> {
         #[allow(unused_mut)]
         let mut client = reqwest::Client::builder()
-            .user_agent(self.user_agent_list.get_random());
+            .user_agent(self.user_agent_list.get_random())
+            .gzip(true)
+            .brotli(true)
+            .zstd(true)
+            .deflate(true);
         #[cfg(feature = "proxy")]
         if let Some(proxy) = &self.proxy_list {
             client = client.proxy(proxy.get_next_proxy().await);
@@ -76,8 +80,8 @@ impl RequestSenderTrait for RequestSender {
         }
         let res = req
             .header("Referer", url.domain().unwrap())
-            .header("Cache-Control", "public")
             .header("Accept-Language", "zh-CN,zh;q=0.9")
+            .header("Accept", "*/*")
             .send().await?;
         Ok(res)
     }

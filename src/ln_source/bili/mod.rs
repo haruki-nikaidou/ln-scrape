@@ -52,7 +52,7 @@ mod test {
     #[tokio::test]
     async fn test_get_novel_info() {
         let source = BiliNovelSource;
-        let request_sender = crate::request_sender::RequestSender::new().cookie("night=0".to_owned());
+        let request_sender = crate::request_sender::RequestSender::new().cookie("night=0;".to_owned());
         let novel_info = source.get_novel_info("2890", request_sender).await.unwrap();
         println!("{:?}", novel_info);
     }
