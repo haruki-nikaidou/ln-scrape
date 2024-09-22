@@ -16,24 +16,38 @@ pub(super) fn parse_info_page(html: Html, id: i32, url: Url) -> Result<NovelInfo
     let title = html.select(&title_selector)
         .next().ok_or(anyhow!("Cannot find book title"))?
         .text().collect::<String>();
+
     let cover_selector = Selector::parse(".book-layout img").unwrap();
     let cover_url = html.select(&cover_selector)
-        .next().unwrap().value()
+        .next().ok_or(anyhow!("Cannot find book cover"))?.value()
         .attr("src").ok_or(anyhow!("cover url not found"))?
         .to_owned();
+
     let tags_selector = Selector::parse(".book-cell .book-meta span em").unwrap();
     let tags = html.select(&tags_selector)
         .map(|tag| tag.text().collect::<String>())
         .collect::<Vec<_>>();
+
     let publisher_selector = Selector::parse(".tag-small.orange").unwrap();
-    let publisher = html.select(&publisher_selector).next().unwrap().text().collect::<String>();
+    let publisher = html.select(&publisher_selector).next()
+        .ok_or(anyhow!("Cannot find publisher"))?
+        .text().collect::<String>();
+
     let status_selector = Selector::parse(".book-cell .book-meta+.book-meta").unwrap();
     let status_text = html.select(&status_selector)
-        .last().unwrap().text().collect::<String>();
+        .last().ok_or(anyhow!("Cannot find status"))?
+        .text().collect::<String>();
+
     let author_selector = Selector::parse(".book-rand-a span").unwrap();
-    let author = html.select(&author_selector).next().unwrap().text().collect::<String>();
+    let author = html.select(&author_selector).next()
+        .ok_or(anyhow!("Cannot find author"))?
+        .text().collect::<String>();
+
     let description_selector = Selector::parse("#bookSummary content").unwrap();
-    let description = html.select(&description_selector).next().unwrap().text().collect::<String>();
+    let description = html.select(&description_selector).next()
+        .ok_or(anyhow!("Cannot find description"))?
+        .text().collect::<String>();
+
     Ok(NovelInfo {
         url,
         id: id.to_string(),
